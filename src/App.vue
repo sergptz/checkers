@@ -1,12 +1,19 @@
 <template>
-  <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
-    <router-view/>
-  </div>
+	<div id="app">
+		<h1>MY Checkers APP</h1>
+		<Checkers/>
+	</div>
 </template>
+
+<script>
+import Checkers from './components/Checkers.vue'
+
+export default {
+	components: {
+		Checkers
+	}
+}
+</script>
 
 <style lang="scss">
 #app {
