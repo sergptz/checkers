@@ -1,7 +1,9 @@
 <template>
 	<div id="app">
-		<h1>MY Checkers APP</h1>
-		<Checkers/>
+		<h1>Checkers by Serega</h1>
+    <div>
+		  <Checkers/>
+    </div>
 	</div>
 </template>
 
