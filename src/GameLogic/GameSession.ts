@@ -1,7 +1,7 @@
 import Checker from "@/GameLogic/Checker";
 
 export default class GameSession {
-    private store: Object
+    private store: any;
     private initialCoordinates: Array<Array<number>> = [
         [0, 2, 0, 2, 0, 2, 0, 2],
         [2, 0, 2, 0, 2, 0, 2, 0],
@@ -32,15 +32,35 @@ export default class GameSession {
         this.store.commit('SET_BOARD_STATE', initBoardState)
     }
 
-    public getCheckerByCoords(x: number, y: number): Checker | null {
-        return this.getCurrentBoardState()[y][x]
+    public toggleMove(): void {
+        this.store.dispatch('setWhoseMove', this.store.state.whosMove === 'white' ? 'black' : 'white')
     }
 
-    public getCurrentBoardState(): Object {
+    public getActiveCell(): Object {
+        return this.store.state.activeCell
+    }
+
+    public setActiveCell(row: number, col: number): void {
+        this.store.dispatch('setActiveCell', {row, col})
+    }
+
+    public clearActiveCell(): void {
+        this.store.dispatch('clearActiveCell');
+    }
+
+    public getWhoseMove(): String {
+        return this.store.state.whoseMove;
+    }
+
+    public getCheckerByCoords(row: number, col: number): Checker | null {
+        return this.getCurrentBoardState()[row][col]
+    }
+
+    public getCurrentBoardState(): Array<any> {
         return this.store.state.board;
     }
 
-    public removeCheckerByCoord(x: number, y: number): void {
-        this.store.dispatch('removeChecker', {x, y})
+    public removeCheckerByCoord(row: number, col: number): void {
+        this.store.dispatch('removeChecker', {row, col})
     }
 }

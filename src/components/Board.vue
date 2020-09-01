@@ -10,11 +10,11 @@
             <th>G</th>
             <th>H</th>
         </tr>
-        <tr v-for="(rowState, i) in boardState">
-            <td @click="onCellClick"
-                v-for="(cellValue, j) in rowState" :data-id="i + '_' + j" :key="'cell:' + i + '_' + j" align="center" :class="getCellClasses(i, j)">
-<!--                                :class="{'cell': 1, 'active': (i == activeCell.row && j == activeCell.column), 'allowed': allowedCells[i] && allowedCells[i][j] === true}"-->
-                <Checker v-if="cellValue" :color="cellValue.color" :is-king="cellValue.isKing" @click="onCheckerClick"/>
+        <tr v-for="(rowState, row) in boardState">
+            <td @click="onCellClick(row, col)"
+                v-for="(cellValue, col) in rowState" :data-id="row + '_' + col" :key="'cell:' + row + '_' + col" align="center" :class="getCellClasses(row, col)">
+<!--                                :class="{'cell': 1, 'active': (row == activeCell.row && col == activeCell.column), 'allowed': allowedCells[row] && allowedCells[row][col] === true}"-->
+                <Checker v-if="cellValue" :color="cellValue.color" :is-king="cellValue.isKing" @click.native.stop="onCheckerClick(row, col)"/>
                 <!--                <div v-if="cell!=0" :class="{'checker': 1, 'white': cell == 1, 'black': cell == 2}"></div>-->
             </td>
         </tr>
@@ -22,7 +22,7 @@
 </template>
 
 <script>
-import {mapActions, mapState} from 'vuex'
+import {mapActions, mapState, mapGetters} from 'vuex'
 import Checker from "@/components/Checker";
 
 export default {
@@ -31,29 +31,26 @@ export default {
     },
     data() {
         return {
-            activeCell: {
-                row: 1,
-                column: 2
-            },
-            // TODO Надо переводить это в хранилище, шоб это было реактивно. То же и с activeCell
-            allowedCells: {3: {3: true, 0: true}}
         }
     },
     methods: {
-        onCellClick() {
-            alert(456)
+        onCellClick(row, col) {
+            this.$root.gameRuler.onCellClick(row, col);
         },
-        onCheckerClick() {
-
+        onCheckerClick(row, col) {
+            this.$root.gameRuler.onCheckerClick(row, col);
         },
-        getCellClasses(i, j) {
-            return `cell ${i == this.activeCell.row && j == this.activeCell.column ? 'active' : ''} ${this.allowedCells[i] && this.allowedCells[i][j] === true ? 'allowed' : ''}`
+        getCellClasses(row, col) {
+            return `cell ${row == this.activeCell.row && col == this.activeCell.col ? 'active' : ''}
+                ${this.allowedCells[row] && this.allowedCells[row][col] === true ? 'allowed' : ''}`
         }
     },
     computed: {
         boardState() {
             return this.$store.state.board
         },
+        ...mapState(['activeCell']),
+        ...mapGetters(['allowedCells'])
     },
 }
 </script>

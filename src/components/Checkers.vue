@@ -36,7 +36,7 @@ export default {
                 row: null,
                 column: null
             },
-            whosTurn: 1
+            whoseMove: 1
         }
     },
     methods: {
@@ -45,7 +45,7 @@ export default {
             const row = cellData[0];
             const col = cellData[1];
             const checker = this.checkersState[row][col];
-            if (this.whosTurn === checker && checker !== 0 && !(this.allowedCells[row] && this.allowedCells[row][col])) {
+            if (this.whoseMove === checker && checker !== 0 && !(this.allowedCells[row] && this.allowedCells[row][col])) {
                 this.activeCell.row = row
                 this.activeCell.column = col
             } else if (this.allowedCells[row] && this.allowedCells[row][col]) {
@@ -88,7 +88,7 @@ export default {
             return object;
         },
         toggleTurn() {
-            this.whosTurn = this.whosTurn == 1 ? 2 : 1
+            this.whoseMove = this.whoseMove == 1 ? 2 : 1
         },
 
         getValueByTwoKeysFromState(key1, key2) {
@@ -165,7 +165,7 @@ export default {
          */
         canEat(row, col, justEated) {
             let checker = this.checkersState[row][col]
-            if (checker == 0 || checker != this.whosTurn) {
+            if (checker == 0 || checker != this.whoseMove) {
                 return false;
             }
             let coords = {
@@ -201,7 +201,7 @@ export default {
         },
         // получаем номер соперника относительно текущего ходящего (1 или 2)
         opposite() {
-            return this.whosTurn == 1 ? 2 : 1;
+            return this.whoseMove == 1 ? 2 : 1;
         }
     }
 }
