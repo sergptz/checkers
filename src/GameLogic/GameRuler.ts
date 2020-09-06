@@ -1,19 +1,19 @@
 import GameSession from "./GameSession";
 import Checker from "@/GameLogic/Checker";
+
 export default class GameRuler {
 
-    public gameSession: GameSession; 
+    public gameSession: GameSession;
 
     constructor(gs: GameSession) {
         this.gameSession = gs
     }
 
-    public getState() : Array<any> {
+    public getState(): Array<any> {
         return this.gameSession.getCurrentBoardState()
     }
 
-    public toggleMove(): void
-    {
+    public toggleMove(): void {
         this.gameSession.toggleMove();
     }
 
@@ -29,55 +29,175 @@ export default class GameRuler {
             console.warn(`Player has no rights to click on this checker`)
             return
         }
-        if (!this.atLeastOneMoveIsPossible(checker, row, col)) {
+        if (!this.atLeastOneMoveIsPossibleForChecker(checker, row, col)) {
             console.warn(`Checker on ${row}:${col} is not movable`)
+            return
         }
         this.gameSession.setActiveCell(row, col)
+        this.gameSession.setAllowedCells(this.getAllPossibleMoves(checker, row, col))
     }
 
-    public isPlayerRightful(checker: Checker) : boolean {
+    public isPlayerRightful(checker: Checker): boolean {
         return this.gameSession.getWhoseMove() === checker.color
     }
 
-    public atLeastOneMoveIsPossible(checker: Checker, fromRow: number, fromCol: number): boolean {
-        // TODO запилить проверки на возможность ходить и кушать,
-        //  причём походу для каждого игрока будет немного отличаться алгоритм (в противоположные стороны будем смотреть).
-        //  Плюс еще надо запилить всё то же и для дамок.
-        //  ИТОГО: 8 вариантов развития событий
-        //  дамка или нет - 2 варианта
-        //  Чёрный или белый - 2 варианта
-        //  и
-        //  Может ли ходить и может ли кушать (2 независимых варианта)
-        //  хммм надо сделать так, чтобы это было компактно и использовалось бы в расчёте allowedCells
-        const board = this.getState();
+    public atLeastOneMoveIsPossibleForChecker(checker: Checker, fromRow: number, fromCol: number): boolean {
+        console.log(this.getAllPossibleMoves(checker, fromRow, fromCol))
+        return this.getAllPossibleMoves(checker, fromRow, fromCol).length > 0
+    }
+
+    public getAllPossibleMoves(checker: Checker, fromRow: number, fromCol: number): Array<Object> {
+        let possibleMoves: Array<any> = []
         if (checker.isKing)
-            return this.canKingCheckerMove(checker, fromRow, fromCol) || this.canKingCheckerEat(checker, fromRow, fromCol)
+            possibleMoves = possibleMoves
+                .concat(this.getPossibleCellsToMoveToForKing(checker, fromRow, fromCol))
+                .concat(this.getPossibleCellsToEatForKing(checker, fromRow, fromCol))
         else
-            return this.canUsualCheckerMove(checker, fromRow, fromCol) || this.canUsualCheckerEat(checker, fromRow, fromCol)
+            possibleMoves = possibleMoves
+                .concat(this.getPossibleCellsToMoveToForUsualChecker(checker, fromRow, fromCol))
+                .concat(this.getPossibleCellsToEatForUsualChecker(checker, fromRow, fromCol))
 
+        console.log(this.getPossibleCellsToMoveToForUsualChecker(checker, fromRow, fromCol))
+
+        return possibleMoves
     }
 
-    public getPossibleCellsToMoveForKing(checker: Checker, fromRow: number, fromCol: number): boolean {
+    public getPossibleCellsToMoveToForKing(checker: Checker, fromRow: number, fromCol: number): Array<Object> {
         const board = this.getState();
-        if (1) {
+        let possibleMoves = []
 
+        for (let row = fromRow; row <= 7; row++) {
+            for (let col = fromCol; col <= 7; col++) {
+                let checkerOnCell: Checker | null = board?.[row]?.[col]
+                if (checkerOnCell === null) {
+                    possibleMoves.push({row, col})
+                }
+            }
         }
+
+        for (let row = fromRow; row <= 7; row++) {
+            for (let col = fromCol; col >= 0; col--) {
+                let checkerOnCell: Checker | null = board?.[row]?.[col]
+                if (checkerOnCell === null) {
+                    possibleMoves.push({row, col})
+                }
+            }
+        }
+
+        for (let row = fromRow; row >= 0; row--) {
+            for (let col = fromCol; col <= 7; col++) {
+                let checkerOnCell: Checker | null = board?.[row]?.[col]
+                if (checkerOnCell === null) {
+                    possibleMoves.push({row, col})
+                }
+            }
+        }
+
+        for (let row = fromRow; row >= 0; row--) {
+            for (let col = fromCol; col >= 0; col--) {
+                let checkerOnCell: Checker | null = board?.[row]?.[col]
+                if (checkerOnCell === null) {
+                    possibleMoves.push({row, col})
+                }
+            }
+        }
+        return possibleMoves
     }
 
-    public getPossibleCellsToEatForKing(checker: Checker, fromRow: number, fromCol: number): boolean {
+    public getPossibleCellsToEatForKing(checker: Checker, fromRow: number, fromCol: number): Array<Object> {
         const board = this.getState();
-        if (1) {
+        let possibleMoves = []
+        const enemyColor = this.getEnemyColor(checker)
 
+        for (let rowThatCanBeEaten = fromRow; rowThatCanBeEaten <= 7; rowThatCanBeEaten++) {
+            for (let colThatCanBeEaten = fromCol; colThatCanBeEaten <= 7; colThatCanBeEaten++) {
+                let checkerOnCellToBeEaten: Checker | null = board?.[rowThatCanBeEaten]?.[colThatCanBeEaten]
+                /** Если на пути нашлась вражеская шашка, смотрим какие свободны дальше клетки */
+                if (checkerOnCellToBeEaten !== null && checkerOnCellToBeEaten.color === enemyColor) {
+                    let stopCheckingCellsToMoveTo = false;
+                    for (let row = rowThatCanBeEaten; row <= 7 && !stopCheckingCellsToMoveTo; row++) {
+                        for (let col = colThatCanBeEaten; col <= 7 && !stopCheckingCellsToMoveTo; col++) {
+                            let cellToMoveTo = board?.[row]?.[col]
+                            if (cellToMoveTo === null) {
+                                possibleMoves.push({row, col})
+                            } else {
+                                stopCheckingCellsToMoveTo = true;
+                            }
+                        }
+                    }
+                }
+            }
         }
+        for (let rowThatCanBeEaten = fromRow; rowThatCanBeEaten <= 7; rowThatCanBeEaten++) {
+            for (let colThatCanBeEaten = fromCol; colThatCanBeEaten >= 0; colThatCanBeEaten--) {
+                let checkerOnCellToBeEaten: Checker | null = board?.[rowThatCanBeEaten]?.[colThatCanBeEaten]
+                /** Если на пути нашлась вражеская шашка, смотрим какие свободны дальше клетки */
+                if (checkerOnCellToBeEaten !== null && checkerOnCellToBeEaten.color === enemyColor) {
+                    let stopCheckingCellsToMoveTo = false;
+                    for (let row = rowThatCanBeEaten; row <= 7 && !stopCheckingCellsToMoveTo; row++) {
+                        for (let col = colThatCanBeEaten; col >= 0 && !stopCheckingCellsToMoveTo; col--) {
+                            let cellToMoveTo = board?.[row]?.[col]
+                            if (cellToMoveTo === null) {
+                                possibleMoves.push({row, col})
+                            } else {
+                                stopCheckingCellsToMoveTo = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (let rowThatCanBeEaten = fromRow; rowThatCanBeEaten >= 0; rowThatCanBeEaten--) {
+            for (let colThatCanBeEaten = fromCol; colThatCanBeEaten <= 7; colThatCanBeEaten++) {
+                let checkerOnCellToBeEaten: Checker | null = board?.[rowThatCanBeEaten]?.[colThatCanBeEaten]
+                /** Если на пути нашлась вражеская шашка, смотрим какие свободны дальше клетки */
+                if (checkerOnCellToBeEaten !== null && checkerOnCellToBeEaten.color === enemyColor) {
+                    let stopCheckingCellsToMoveTo = false;
+                    for (let row = rowThatCanBeEaten; row >= 0 && !stopCheckingCellsToMoveTo; row--) {
+                        for (let col = colThatCanBeEaten; col <= 7 && !stopCheckingCellsToMoveTo; col++) {
+                            let cellToMoveTo = board?.[row]?.[col]
+                            if (cellToMoveTo === null) {
+                                possibleMoves.push({row, col})
+                            } else {
+                                stopCheckingCellsToMoveTo = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (let rowThatCanBeEaten = fromRow; rowThatCanBeEaten >= 0; rowThatCanBeEaten--) {
+            for (let colThatCanBeEaten = fromCol; colThatCanBeEaten >= 0; colThatCanBeEaten--) {
+                let checkerOnCellToBeEaten: Checker | null = board?.[rowThatCanBeEaten]?.[colThatCanBeEaten]
+                /** Если на пути нашлась вражеская шашка, смотрим какие свободны дальше клетки */
+                if (checkerOnCellToBeEaten !== null && checkerOnCellToBeEaten.color === enemyColor) {
+                    let stopCheckingCellsToMoveTo = false;
+                    for (let row = rowThatCanBeEaten; row >= 0 && !stopCheckingCellsToMoveTo; row--) {
+                        for (let col = colThatCanBeEaten; col >= 0 && !stopCheckingCellsToMoveTo; col--) {
+                            let cellToMoveTo = board?.[row]?.[col]
+                            if (cellToMoveTo === null) {
+                                possibleMoves.push({row, col})
+                            } else {
+                                stopCheckingCellsToMoveTo = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return possibleMoves
     }
 
-    public getPossibleCellsToMoveForUsualChecker(checker: Checker, fromRow: number, fromCol: number): Array<any> {
+    public getPossibleCellsToMoveToForUsualChecker(checker: Checker, fromRow: number, fromCol: number): Array<any> {
         const board = this.getState();
         let possibleMoves: Array<any> = [];
         /** TODO эта концепция, возможно, требует переработки
          *  Надо подумать над тем, как хранить данные о местоположении шашек на доске
          *  */
-        const possibleRow = checker.color === 'white' ? fromRow + 1 : fromRow - 1;
+        const possibleRow = checker.color === 'white' ? fromRow - 1 : fromRow + 1;
         const possibleCol1 = fromCol + 1;
         const possibleCol2 = fromCol - 1;
         const possibleMove1 = board?.[possibleRow]?.[possibleCol1] === null;
@@ -109,9 +229,10 @@ export default class GameRuler {
             fromCol + 2,
             fromCol - 2
         ]
+        const enemyColor = this.getEnemyColor(checker)
         possibleRows.forEach(row => {
             possibleCols.forEach(col => {
-                if (board?.[fromRow + (row - fromRow) / 2]?.[fromCol + (col - fromCol) / 2] === (checker.color === 'white' ? 'black' : 'white')
+                if (board?.[fromRow + (row - fromRow) / 2]?.[fromCol + (col - fromCol) / 2] === enemyColor
                     && board?.[row]?.[col] === null) {
                     possibleMoves.push({
                         row,
@@ -131,10 +252,15 @@ export default class GameRuler {
             this.onCheckerClick(row, col)
             return;
         }
-        const activeCell = this.gameSession.getActiveCell()
+        const activeCell: Object = this.gameSession.getActiveCell()
         if (activeCell.row === null || activeCell.col === null) {
             console.warn('Cell is clicked, but there is no active cell chosen, so it is pointless')
             return
         }
+
+    }
+
+    public getEnemyColor(checker: Checker): String {
+        return checker.color === 'white' ? 'black' : 'white'
     }
 }

@@ -11,12 +11,8 @@ export default new Vuex.Store({
             row: null,
             col: null
         },
+        allowedCells: [],
         whoseMove: 'white'
-    },
-    getters: {
-        allowedCells(state) {
-            return {}
-        },
     },
     mutations: {
         SET_BOARD_STATE: (state, payload) => {
@@ -39,6 +35,9 @@ export default new Vuex.Store({
         },
         SET_WHOSE_MOVE: (state, {whoseMove}) => {
             state.whoseMove = whoseMove
+        },
+        SET_ALLOWED_CELLS: (state, allowedCells) => {
+            state.allowedCells = allowedCells
         }
     },
     actions: {
@@ -63,6 +62,12 @@ export default new Vuex.Store({
         },
         clearActiveCell({commit}) {
             commit('CLEAR_ACTIVE_CELL')
+        },
+        setAllowedCells({commit}, {allowedCells}) {
+            commit('SET_ALLOWED_CELLS', allowedCells)
+        },
+        clearAllowedCells({commit}) {
+            commit('SET_ALLOWED_CELLS', [])
         }
     }
 })

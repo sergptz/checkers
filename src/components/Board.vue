@@ -12,7 +12,8 @@
         </tr>
         <tr v-for="(rowState, row) in boardState">
             <td @click="onCellClick(row, col)"
-                v-for="(cellValue, col) in rowState" :data-id="row + '_' + col" :key="'cell:' + row + '_' + col" align="center" :class="getCellClasses(row, col)">
+                v-for="(cellValue, col) in rowState" :data-id="row + '_' + col" :key="'cell:' + row + '_' + col"
+                align="center" :class="getCellClasses(row, col)">
 <!--                                :class="{'cell': 1, 'active': (row == activeCell.row && col == activeCell.column), 'allowed': allowedCells[row] && allowedCells[row][col] === true}"-->
                 <Checker v-if="cellValue" :color="cellValue.color" :is-king="cellValue.isKing" @click.native.stop="onCheckerClick(row, col)"/>
                 <!--                <div v-if="cell!=0" :class="{'checker': 1, 'white': cell == 1, 'black': cell == 2}"></div>-->
@@ -42,15 +43,22 @@ export default {
         },
         getCellClasses(row, col) {
             return `cell ${row == this.activeCell.row && col == this.activeCell.col ? 'active' : ''}
-                ${this.allowedCells[row] && this.allowedCells[row][col] === true ? 'allowed' : ''}`
+                ${this.allowedCellsGroupedIntoObject[row] && this.allowedCellsGroupedIntoObject[row][col] === true ? 'allowed' : ''}`
         }
     },
     computed: {
         boardState() {
             return this.$store.state.board
         },
-        ...mapState(['activeCell']),
-        ...mapGetters(['allowedCells'])
+        allowedCellsGroupedIntoObject() {
+            let result = {}
+            this.allowedCells.map(({row, col}) => {
+                if (!result[row]) result[row] = {}
+                result[row][col] = true
+            })
+            return result
+        },
+        ...mapState(['activeCell', 'allowedCells'])
     },
 }
 </script>

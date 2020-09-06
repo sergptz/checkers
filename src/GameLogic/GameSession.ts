@@ -63,4 +63,16 @@ export default class GameSession {
     public removeCheckerByCoord(row: number, col: number): void {
         this.store.dispatch('removeChecker', {row, col})
     }
+
+    public setAllowedCells(allowedCells: Array<Object>) {
+        this.store.dispatch('setAllowedCells', {allowedCells})
+    }
+
+    public getAllowedCells(): Array<Object> {
+        return this.store.state.allowedCells
+    }
+
+    public clearAllowedCells() {
+        this.store.dispatch('clearAllowedCells')
+    }
 }
