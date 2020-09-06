@@ -18,6 +18,9 @@ export default new Vuex.Store({
         SET_BOARD_STATE: (state, payload) => {
             state.board = payload
         },
+        SET_CHECKER: (state, {row, col, checker}) => {
+            state.board[row][col] = checker
+        },
         REMOVE_CHECKER: ({board}, {row, col}): void => {
             Vue.set(board[row], col, null)
         },
@@ -33,8 +36,8 @@ export default new Vuex.Store({
                 col: null
             }
         },
-        SET_WHOSE_MOVE: (state, {whoseMove}) => {
-            state.whoseMove = whoseMove
+        SET_WHOSE_MOVE: (state, {color}) => {
+            state.whoseMove = color
         },
         SET_ALLOWED_CELLS: (state, allowedCells) => {
             state.allowedCells = allowedCells
@@ -42,20 +45,20 @@ export default new Vuex.Store({
     },
     actions: {
         getCheckerByCoords({state}, {row, col}): Checker | null {
-            return state.board[row][col]
+            return state?.board?.[row]?.[col] || null
         },
         moveChecker({state, commit, dispatch}, {fromRow, fromCol, toRow, toCol}) {
-            const checker = dispatch('getCheckerByCoords', fromRow, fromCol)
+            const checker = state.board[fromRow][fromCol]
             if (checker == null) throw new Error(`There is no checker in coords ${fromRow}:${fromCol}`)
             commit('SET_CHECKER', {row: toRow, col: toCol, checker})
             dispatch('removeChecker', {row: fromRow, col: fromCol})
         },
         removeChecker({state, commit}, {row, col}) {
-            if (!state.board[col][row]) throw new Error(`There is no checker in coords ${row}:${col}`)
+            if (!state.board[row][col]) throw new Error(`There is no checker in coords ${row}:${col}`)
             commit('REMOVE_CHECKER', {row, col})
         },
-        setWhoseMove({commit}, {whoseMove}) {
-            commit('SET_WHOSE_MOVE', {whoseMove})
+        setWhoseMove({commit}, color) {
+            commit('SET_WHOSE_MOVE', {color})
         },
         setActiveCell({commit}, {row, col}) {
             commit('SET_ACTIVE_CELL', {row, col})

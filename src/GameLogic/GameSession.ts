@@ -33,7 +33,7 @@ export default class GameSession {
     }
 
     public toggleMove(): void {
-        this.store.dispatch('setWhoseMove', this.store.state.whosMove === 'white' ? 'black' : 'white')
+        this.store.dispatch('setWhoseMove', this.store.state.whoseMove === 'white' ? 'black' : 'white')
     }
 
     public getActiveCell(): Object {
@@ -48,12 +48,21 @@ export default class GameSession {
         this.store.dispatch('clearActiveCell');
     }
 
+    public getActiveChecker(): Checker | null {
+        const {row, col} = this.store.state.activeCell
+        const checker = this.getCheckerByCoords(row, col)
+        if (row === null || col === null || checker === null)
+            throw new Error('No cell is active, but you are trying to get the active checker')
+        return checker
+    }
+
     public getWhoseMove(): String {
         return this.store.state.whoseMove;
     }
 
     public getCheckerByCoords(row: number, col: number): Checker | null {
-        return this.getCurrentBoardState()[row][col]
+        const state = this.getCurrentBoardState()
+        return state?.[row]?.[col]
     }
 
     public getCurrentBoardState(): Array<any> {
@@ -74,5 +83,9 @@ export default class GameSession {
 
     public clearAllowedCells() {
         this.store.dispatch('clearAllowedCells')
+    }
+
+    public moveChecker(fromRow: number, fromCol: number, toRow: number, toCol: number) {
+        this.store.dispatch('moveChecker', {fromRow, fromCol, toRow, toCol})
     }
 }

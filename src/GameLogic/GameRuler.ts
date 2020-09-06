@@ -19,14 +19,14 @@ export default class GameRuler {
 
     public onCheckerClick(row: number, col: number) {
         this.gameSession.clearActiveCell()
+        this.gameSession.clearAllowedCells()
         const checker: Checker | null = this.gameSession.getCheckerByCoords(row, col)
-        const board = this.getState();
         if (checker === null) {
             console.warn(`There is no checker in ${row}:${col}, but onCheckerClick method was called!`)
             return;
         }
         if (!this.isPlayerRightful(checker)) {
-            console.warn(`Player has no rights to click on this checker`)
+            console.warn(`Current player has no rights to click on this checker`)
             return
         }
         if (!this.atLeastOneMoveIsPossibleForChecker(checker, row, col)) {
@@ -37,13 +37,52 @@ export default class GameRuler {
         this.gameSession.setAllowedCells(this.getAllPossibleMoves(checker, row, col))
     }
 
+    public onCellClick(row: number, col: number) {
+        console.info(`${row}:${col} is clicked!`)
+        const checker: Checker | null = this.gameSession.getCheckerByCoords(row, col)
+
+        /** Если на нажатой клетке стоит шашка, то расцениваем это как нажатие на шашку */
+        if (checker !== null) {
+            console.warn('Cell is clicked on, but we assume that it was a click on checker')
+            this.onCheckerClick(row, col)
+            return;
+        }
+        const activeCell: Object = this.gameSession.getActiveCell()
+        if (activeCell.row === null || activeCell.col === null) {
+            console.warn('Cell is clicked, but there is no active cell chosen, so it is pointless')
+            this.gameSession.clearAllowedCells()
+            return
+        }
+        const activeChecker: Checker | null = this.gameSession.getActiveChecker()
+
+        let fromRow = activeCell.row
+        let fromCol = activeCell.col
+
+        if (this.canCheckerMoveToCellFromCoords(activeChecker, fromRow, fromCol, row, col)) {
+            this.gameSession.moveChecker(fromRow, fromCol, row, col)
+            this.toggleMove()
+        } else {
+            console.error(`Checker on ${fromRow}:${fromCol} cannot move to ${row}:${col}`)
+        }
+        this.gameSession.clearActiveCell()
+        this.gameSession.clearAllowedCells()
+    }
+
     public isPlayerRightful(checker: Checker): boolean {
         return this.gameSession.getWhoseMove() === checker.color
     }
 
     public atLeastOneMoveIsPossibleForChecker(checker: Checker, fromRow: number, fromCol: number): boolean {
-        console.log(this.getAllPossibleMoves(checker, fromRow, fromCol))
         return this.getAllPossibleMoves(checker, fromRow, fromCol).length > 0
+    }
+
+    public canCheckerMoveToCellFromCoords(checker: Checker, fromRow: number, fromCol: number, toRow: number, toCol: number) {
+        const possibleMoves = this.getAllPossibleMoves(checker, fromRow, fromCol)
+        let answer = false;
+        possibleMoves.forEach(({row, col}) => {
+            if (row == toRow && toCol == col) answer = true
+        })
+        return answer
     }
 
     public getAllPossibleMoves(checker: Checker, fromRow: number, fromCol: number): Array<Object> {
@@ -57,7 +96,6 @@ export default class GameRuler {
                 .concat(this.getPossibleCellsToMoveToForUsualChecker(checker, fromRow, fromCol))
                 .concat(this.getPossibleCellsToEatForUsualChecker(checker, fromRow, fromCol))
 
-        console.log(this.getPossibleCellsToMoveToForUsualChecker(checker, fromRow, fromCol))
 
         return possibleMoves
     }
@@ -203,6 +241,8 @@ export default class GameRuler {
         const possibleMove1 = board?.[possibleRow]?.[possibleCol1] === null;
         const possibleMove2 = board?.[possibleRow]?.[possibleCol2] === null;
 
+        this.gameSession.clearAllowedCells()
+
         if (possibleMove1) {
             possibleMoves.push({
                 row: possibleRow,
@@ -221,43 +261,23 @@ export default class GameRuler {
     public getPossibleCellsToEatForUsualChecker(checker: Checker, fromRow: number, fromCol: number): Array<any> {
         const board = this.getState();
         let possibleMoves: Array<any> = []
-        let possibleRows = [
-            fromRow + 2,
-            fromRow - 2
-        ]
-        let possibleCols = [
-            fromCol + 2,
-            fromCol - 2
-        ]
+        let possibleRowsDeltas = [2, -2]
+        let possibleColsDeltas = [2, -2]
         const enemyColor = this.getEnemyColor(checker)
-        possibleRows.forEach(row => {
-            possibleCols.forEach(col => {
-                if (board?.[fromRow + (row - fromRow) / 2]?.[fromCol + (col - fromCol) / 2] === enemyColor
-                    && board?.[row]?.[col] === null) {
+        possibleRowsDeltas.forEach(rowDelta => {
+            const finalRow = fromRow + rowDelta
+            possibleColsDeltas.forEach(colDelta => {
+                const finalCol = fromCol + colDelta
+                if (board?.[finalRow - rowDelta / 2]?.[finalCol - colDelta / 2]?.color === enemyColor
+                    && board?.[finalRow]?.[finalCol] === null) {
                     possibleMoves.push({
-                        row,
-                        col
+                        row: finalRow,
+                        col: finalCol
                     })
                 }
             })
         })
         return possibleMoves
-    }
-
-    public onCellClick(row: number, col: number) {
-        const checker: Checker | null = this.gameSession.getCheckerByCoords(row, col)
-        /** Если на нажатой клетке стоит шашка, то расцениваем это как нажатие на шашку */
-        if (checker !== null) {
-            console.warn('Cell is clicked on, but we assume that it was a click on checker')
-            this.onCheckerClick(row, col)
-            return;
-        }
-        const activeCell: Object = this.gameSession.getActiveCell()
-        if (activeCell.row === null || activeCell.col === null) {
-            console.warn('Cell is clicked, but there is no active cell chosen, so it is pointless')
-            return
-        }
-
     }
 
     public getEnemyColor(checker: Checker): String {

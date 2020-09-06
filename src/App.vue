@@ -1,10 +1,8 @@
 <template>
 	<div id="app">
 		<h1>Checkers by Serega</h1>
-    <div>
-		  <Checkers/>
+        <Checkers/>
     </div>
-	</div>
 </template>
 
 <script>
