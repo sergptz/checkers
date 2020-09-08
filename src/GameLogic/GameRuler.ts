@@ -141,41 +141,46 @@ export default class GameRuler {
         const board = this.getState();
         let possibleMoves = []
 
-        for (let row = fromRow; row <= 7; row++) {
-            for (let col = fromCol; col <= 7; col++) {
-                let checkerOnCell: Checker | null = board?.[row]?.[col]
-                if (checkerOnCell === null) {
-                    possibleMoves.push({row, col})
-                }
+        let row = fromRow
+        let col = fromCol
+        while (row <= 7 && col <= 7) {
+            let checkerOnCell: Checker | null = board?.[row]?.[col]
+            if (checkerOnCell === null) {
+                possibleMoves.push({row, col})
             }
+            row++; col++;
         }
 
-        for (let row = fromRow; row <= 7; row++) {
-            for (let col = fromCol; col >= 0; col--) {
-                let checkerOnCell: Checker | null = board?.[row]?.[col]
-                if (checkerOnCell === null) {
-                    possibleMoves.push({row, col})
-                }
+        row = fromRow
+        col = fromCol
+        while (row <= 7 && col >= 0) {
+            let checkerOnCell: Checker | null = board?.[row]?.[col]
+            if (checkerOnCell === null) {
+                possibleMoves.push({row, col})
             }
+            row++; col--;
         }
 
-        for (let row = fromRow; row >= 0; row--) {
-            for (let col = fromCol; col <= 7; col++) {
-                let checkerOnCell: Checker | null = board?.[row]?.[col]
-                if (checkerOnCell === null) {
-                    possibleMoves.push({row, col})
-                }
+        row = fromRow
+        col = fromCol
+        while (row >= 0 && col <= 7) {
+            let checkerOnCell: Checker | null = board?.[row]?.[col]
+            if (checkerOnCell === null) {
+                possibleMoves.push({row, col})
             }
+            row--; col++;
         }
 
-        for (let row = fromRow; row >= 0; row--) {
-            for (let col = fromCol; col >= 0; col--) {
-                let checkerOnCell: Checker | null = board?.[row]?.[col]
-                if (checkerOnCell === null) {
-                    possibleMoves.push({row, col})
-                }
+        row = fromRow
+        col = fromCol
+        while (row >= 0 && col >= 0) {
+            let checkerOnCell: Checker | null = board?.[row]?.[col]
+            if (checkerOnCell === null) {
+                possibleMoves.push({row, col})
             }
+            row--; col--;
         }
+
         return possibleMoves
     }
 
