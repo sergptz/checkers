@@ -12,9 +12,6 @@ const gameSession = new GameSession(store);
 gameSession.initializeSession();
 const checkersGame = new GameRuler(gameSession);
 
-// let checker = gameSession.getCheckerByCoords(1, 0)
-// gameSession.removeCheckerByCoord(1, 0)
-
 new Vue({
     router,
     store,

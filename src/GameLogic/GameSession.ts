@@ -73,16 +73,25 @@ export default class GameSession {
         this.store.dispatch('removeChecker', {row, col})
     }
 
-    public setAllowedCells(allowedCells: Array<Object>) {
-        this.store.dispatch('setAllowedCells', {allowedCells})
+    public setAllowedCellsToMove(cells: Array<Object>) {
+        this.store.dispatch('setAllowedCellsToMove', {cells})
+    }
+
+    public setAllowedCellsToEat(cells: Array<Object>) {
+        this.store.dispatch('setAllowedCellsToEat', {cells})
     }
 
     public getAllowedCells(): Array<Object> {
         return this.store.state.allowedCells
     }
 
-    public clearAllowedCells() {
-        this.store.dispatch('clearAllowedCells')
+    public clearAllowedCellsToMoveAndEat() {
+        this.store.dispatch('clearAllowedCellsToMoveAndEat')
+    }
+
+    public eatChecker(fromRow: number, fromCol: number, toRow: number, toCol: number, eatableCheckerCoords: Object) {
+        this.moveChecker(fromRow, fromCol, toRow, toCol)
+        this.removeCheckerByCoord(eatableCheckerCoords.row, eatableCheckerCoords.col)
     }
 
     public moveChecker(fromRow: number, fromCol: number, toRow: number, toCol: number) {

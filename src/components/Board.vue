@@ -14,9 +14,7 @@
             <td @click="onCellClick(row, col)"
                 v-for="(cellValue, col) in rowState" :data-id="row + '_' + col" :key="'cell:' + row + '_' + col"
                 align="center" :class="getCellClasses(row, col)">
-<!--                                :class="{'cell': 1, 'active': (row == activeCell.row && col == activeCell.column), 'allowed': allowedCells[row] && allowedCells[row][col] === true}"-->
                 <Checker v-if="cellValue" :color="cellValue.color" :is-king="cellValue.isKing" @click.native.stop="onCheckerClick(row, col)"/>
-                <!--                <div v-if="cell!=0" :class="{'checker': 1, 'white': cell == 1, 'black': cell == 2}"></div>-->
             </td>
         </tr>
     </table>
@@ -58,7 +56,8 @@ export default {
             })
             return result
         },
-        ...mapState(['activeCell', 'allowedCells'])
+        ...mapState(['activeCell']),
+        ...mapGetters({allowedCells: 'allowedCellsToMoveAndEat'})
     },
 }
 </script>

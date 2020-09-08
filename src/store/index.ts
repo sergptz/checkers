@@ -11,8 +11,14 @@ export default new Vuex.Store({
             row: null,
             col: null
         },
-        allowedCells: [],
+        allowedCellsToMove: [],
+        allowedCellsToEat: [],
         whoseMove: 'white'
+    },
+    getters: {
+        allowedCellsToMoveAndEat({allowedCellsToMove, allowedCellsToEat}) {
+            return allowedCellsToMove.concat(allowedCellsToEat)
+        }
     },
     mutations: {
         SET_BOARD_STATE: (state, payload) => {
@@ -39,8 +45,11 @@ export default new Vuex.Store({
         SET_WHOSE_MOVE: (state, {color}) => {
             state.whoseMove = color
         },
-        SET_ALLOWED_CELLS: (state, allowedCells) => {
-            state.allowedCells = allowedCells
+        SET_ALLOWED_CELLS_TO_MOVE: (state, cells) => {
+            state.allowedCellsToMove = cells
+        },
+        SET_ALLOWED_CELLS_TO_EAT: (state, cells) => {
+            state.allowedCellsToEat = cells
         }
     },
     actions: {
@@ -66,11 +75,15 @@ export default new Vuex.Store({
         clearActiveCell({commit}) {
             commit('CLEAR_ACTIVE_CELL')
         },
-        setAllowedCells({commit}, {allowedCells}) {
-            commit('SET_ALLOWED_CELLS', allowedCells)
+        setAllowedCellsToMove({commit}, {cells}) {
+            commit('SET_ALLOWED_CELLS_TO_MOVE', cells)
         },
-        clearAllowedCells({commit}) {
-            commit('SET_ALLOWED_CELLS', [])
+        setAllowedCellsToEat({commit}, {cells}) {
+            commit('SET_ALLOWED_CELLS_TO_EAT', cells)
+        },
+        clearAllowedCellsToMoveAndEat({commit}) {
+            commit('SET_ALLOWED_CELLS_TO_MOVE', [])
+            commit('SET_ALLOWED_CELLS_TO_EAT', [])
         }
     }
 })
