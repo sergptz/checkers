@@ -15,10 +15,14 @@ export default {
             type: Boolean,
             default: false
         },
+        isGoingToBeEatenAtTheEndOfTheMove: {
+            type: Boolean,
+            default: false
+        }
     },
     computed: {
         checkerClasses() {
-            return `checker ${this.color} ${this.isKing ? 'king' : ''}`
+            return `checker ${this.color} ${this.isKing ? 'king' : ''} ${this.isGoingToBeEatenAtTheEndOfTheMove ? 'is-going-to-be-eaten' : ''}`
         }
     }
 }
@@ -48,5 +52,9 @@ export default {
 .checker.king.black {
     background-color: #5d3900;
     border: dashed white 3px;
+}
+
+.is-going-to-be-eaten {
+    opacity: 30%;
 }
 </style>
