@@ -42,6 +42,7 @@ export default class GameRuler {
     public onCellClick(row: number, col: number) {
         console.info(`${row}:${col} is clicked!`)
         const checker: Checker | null = this.gameSession.getCheckerByCoords(row, col)
+        const justAte = this.gameSession.getJustAte()
 
         /** Если на нажатой клетке стоит шашка, то расцениваем это как нажатие на шашку */
         if (checker !== null) {
@@ -67,14 +68,19 @@ export default class GameRuler {
 
         if (this.canCheckerMoveToCellFromCoords(activeChecker, fromRow, fromCol, row, col)) {
             this.gameSession.moveChecker(fromRow, fromCol, row, col)
+            this.gameSession.setJustAte(false)
             this.toggleMove()
         } else if (this.canCheckerEatToCellFromCoords(activeChecker, fromRow, fromCol, row, col)) {
-            const eatableCheckerCoords = this.getEatableCheckerCoords(activeChecker, fromRow, fromCol, row, col)
-            this.gameSession.eatChecker(fromRow, fromCol, row, col, eatableCheckerCoords)
+            while (this.canCheckerEatToCellFromCoords(activeChecker, fromRow, fromCol, row, col)) {
+                const eatableCheckerCoords = this.getEatableCheckerCoords(activeChecker, fromRow, fromCol, row, col)
+                this.gameSession.eatChecker(fromRow, fromCol, row, col, eatableCheckerCoords)
+            }
+            this.gameSession.setJustAte(true)
             this.toggleMove()
         } else {
             console.error(`Checker on ${fromRow}:${fromCol} cannot move to ${row}:${col}`)
         }
+        this.gameSession.setJustAte(false)
         this.gameSession.clearActiveCell()
         this.gameSession.clearAllowedCellsToMoveAndEat()
     }
@@ -141,44 +147,48 @@ export default class GameRuler {
         const board = this.getState();
         let possibleMoves = []
 
-        let row = fromRow
-        let col = fromCol
+        let row = fromRow + 1
+        let col = fromCol + 1
         while (row <= 7 && col <= 7) {
             let checkerOnCell: Checker | null = board?.[row]?.[col]
             if (checkerOnCell === null) {
                 possibleMoves.push({row, col})
-            }
-            row++; col++;
+            } else break
+            row++;
+            col++;
         }
 
-        row = fromRow
-        col = fromCol
+        row = fromRow + 1
+        col = fromCol - 1
         while (row <= 7 && col >= 0) {
             let checkerOnCell: Checker | null = board?.[row]?.[col]
             if (checkerOnCell === null) {
                 possibleMoves.push({row, col})
-            }
-            row++; col--;
+            } else break
+            row++;
+            col--;
         }
 
-        row = fromRow
-        col = fromCol
+        row = fromRow - 1
+        col = fromCol + 1
         while (row >= 0 && col <= 7) {
             let checkerOnCell: Checker | null = board?.[row]?.[col]
             if (checkerOnCell === null) {
                 possibleMoves.push({row, col})
-            }
-            row--; col++;
+            } else break
+            row--;
+            col++;
         }
 
-        row = fromRow
-        col = fromCol
+        row = fromRow - 1
+        col = fromCol - 1
         while (row >= 0 && col >= 0) {
             let checkerOnCell: Checker | null = board?.[row]?.[col]
             if (checkerOnCell === null) {
                 possibleMoves.push({row, col})
-            }
-            row--; col--;
+            } else break
+            row--;
+            col--;
         }
 
         return possibleMoves
@@ -188,100 +198,121 @@ export default class GameRuler {
         const board = this.getState();
         let possibleMoves = []
         const enemyColor = this.getEnemyColor(checker)
+        const currentColor = this.gameSession.getWhoseMove()
 
-        for (let rowThatCanBeEaten = fromRow; rowThatCanBeEaten <= 7; rowThatCanBeEaten++) {
-            for (let colThatCanBeEaten = fromCol; colThatCanBeEaten <= 7; colThatCanBeEaten++) {
-                const eatableChecker: Checker | null = board?.[rowThatCanBeEaten]?.[colThatCanBeEaten]
-                const eatableCheckerCoors: Object =  {
-                    row: rowThatCanBeEaten,
-                    col: colThatCanBeEaten
-                }
-                /** Если на пути нашлась вражеская шашка, смотрим какие свободны дальше клетки */
-                if (eatableChecker !== null && eatableChecker.color === enemyColor) {
-                    let stopCheckingCellsToMoveTo = false;
-                    for (let row = rowThatCanBeEaten; row <= 7 && !stopCheckingCellsToMoveTo; row++) {
-                        for (let col = colThatCanBeEaten; col <= 7 && !stopCheckingCellsToMoveTo; col++) {
-                            let cellToMoveTo = board?.[row]?.[col]
-                            if (cellToMoveTo === null) {
-                                possibleMoves.push({row, col, eatableCheckerCoors})
-                            } else {
-                                stopCheckingCellsToMoveTo = true;
-                            }
-                        }
+        let rowThatCanBeEaten = fromRow + 1;
+        let colThatCanBeEaten = fromCol + 1;
+
+        let breakMainLoop = false;
+
+        while (rowThatCanBeEaten <= 7 && colThatCanBeEaten <= 7 && !breakMainLoop) {
+            const eatableChecker: Checker | null = board?.[rowThatCanBeEaten]?.[colThatCanBeEaten]
+            const eatableCheckerCoords: Object = {
+                row: rowThatCanBeEaten,
+                col: colThatCanBeEaten
+            }
+            /** Если на пути нашлась вражеская шашка, то
+             * если это дружественная, то выходим
+             * если вражеская, то смотрим какие свободны дальше клетки */
+            if (eatableChecker?.color === currentColor) break
+            if (eatableChecker !== null && eatableChecker.color === enemyColor) {
+                let row = rowThatCanBeEaten + 1
+                let col = colThatCanBeEaten + 1
+                while (row <= 7 && col <= 7) {
+                    let cellToMoveTo = board?.[row]?.[col]
+                    if (cellToMoveTo === null) {
+                        possibleMoves.push({row, col, eatableCheckerCoords})
+                    } else {
+                        breakMainLoop = true
+                        break
                     }
+                    row++;
+                    col++;
                 }
             }
-        }
-        for (let rowThatCanBeEaten = fromRow; rowThatCanBeEaten <= 7; rowThatCanBeEaten++) {
-            for (let colThatCanBeEaten = fromCol; colThatCanBeEaten >= 0; colThatCanBeEaten--) {
-                const eatableChecker: Checker | null = board?.[rowThatCanBeEaten]?.[colThatCanBeEaten]
-                const eatableCheckerCoords: Object =  {
-                    row: rowThatCanBeEaten,
-                    col: colThatCanBeEaten
-                }
-                /** Если на пути нашлась вражеская шашка, смотрим какие свободны дальше клетки */
-                if (eatableChecker !== null && eatableChecker.color === enemyColor) {
-                    let stopCheckingCellsToMoveTo = false;
-                    for (let row = rowThatCanBeEaten; row <= 7 && !stopCheckingCellsToMoveTo; row++) {
-                        for (let col = colThatCanBeEaten; col >= 0 && !stopCheckingCellsToMoveTo; col--) {
-                            let cellToMoveTo = board?.[row]?.[col]
-                            if (cellToMoveTo === null) {
-                                possibleMoves.push({row, col, eatableCheckerCoords})
-                            } else {
-                                stopCheckingCellsToMoveTo = true;
-                            }
-                        }
-                    }
-                }
-            }
+            rowThatCanBeEaten++
+            colThatCanBeEaten++
         }
 
-        for (let rowThatCanBeEaten = fromRow; rowThatCanBeEaten >= 0; rowThatCanBeEaten--) {
-            for (let colThatCanBeEaten = fromCol; colThatCanBeEaten <= 7; colThatCanBeEaten++) {
-                const eatableChecker: Checker | null = board?.[rowThatCanBeEaten]?.[colThatCanBeEaten]
-                const eatableCheckerCoords: Object =  {
-                    row: rowThatCanBeEaten,
-                    col: colThatCanBeEaten
-                }
-                /** Если на пути нашлась вражеская шашка, смотрим какие свободны дальше клетки */
-                if (eatableChecker !== null && eatableChecker.color === enemyColor) {
-                    let stopCheckingCellsToMoveTo = false;
-                    for (let row = rowThatCanBeEaten; row >= 0 && !stopCheckingCellsToMoveTo; row--) {
-                        for (let col = colThatCanBeEaten; col <= 7 && !stopCheckingCellsToMoveTo; col++) {
-                            let cellToMoveTo = board?.[row]?.[col]
-                            if (cellToMoveTo === null) {
-                                possibleMoves.push({row, col, eatableCheckerCoords})
-                            } else {
-                                stopCheckingCellsToMoveTo = true;
-                            }
-                        }
-                    }
+        rowThatCanBeEaten = fromRow + 1;
+        colThatCanBeEaten = fromCol - 1;
+
+        while (rowThatCanBeEaten <= 7 && colThatCanBeEaten >= 0) {
+            const eatableChecker: Checker | null = board?.[rowThatCanBeEaten]?.[colThatCanBeEaten]
+            const eatableCheckerCoords: Object = {
+                row: rowThatCanBeEaten,
+                col: colThatCanBeEaten
+            }
+            if (eatableChecker?.color === currentColor) break
+            if (eatableChecker !== null && eatableChecker.color === enemyColor) {
+                let row = rowThatCanBeEaten + 1
+                let col = colThatCanBeEaten - 1
+                while (row <= 7 && col >= 0) {
+                    let cellToMoveTo = board?.[row]?.[col]
+                    if (cellToMoveTo === null) {
+                        possibleMoves.push({row, col, eatableCheckerCoords})
+                    } else break;
+                    row++;
+                    col--
                 }
             }
+            rowThatCanBeEaten++
+            colThatCanBeEaten--
         }
 
-        for (let rowThatCanBeEaten = fromRow; rowThatCanBeEaten >= 0; rowThatCanBeEaten--) {
-            for (let colThatCanBeEaten = fromCol; colThatCanBeEaten >= 0; colThatCanBeEaten--) {
-                const eatableChecker: Checker | null = board?.[rowThatCanBeEaten]?.[colThatCanBeEaten]
-                const eatableCheckerCoords: Object =  {
-                    row: rowThatCanBeEaten,
-                    col: colThatCanBeEaten
-                }
-                /** Если на пути нашлась вражеская шашка, смотрим какие свободны дальше клетки */
-                if (eatableChecker !== null && eatableChecker.color === enemyColor) {
-                    let stopCheckingCellsToMoveTo = false;
-                    for (let row = rowThatCanBeEaten; row >= 0 && !stopCheckingCellsToMoveTo; row--) {
-                        for (let col = colThatCanBeEaten; col >= 0 && !stopCheckingCellsToMoveTo; col--) {
-                            let cellToMoveTo = board?.[row]?.[col]
-                            if (cellToMoveTo === null) {
-                                possibleMoves.push({row, col, eatableCheckerCoords})
-                            } else {
-                                stopCheckingCellsToMoveTo = true;
-                            }
-                        }
-                    }
+        rowThatCanBeEaten = fromRow - 1;
+        colThatCanBeEaten = fromCol + 1;
+
+        while (rowThatCanBeEaten >= 0 && colThatCanBeEaten <= 7) {
+            const eatableChecker: Checker | null = board?.[rowThatCanBeEaten]?.[colThatCanBeEaten]
+            const eatableCheckerCoords: Object = {
+                row: rowThatCanBeEaten,
+                col: colThatCanBeEaten
+            }
+            if (eatableChecker?.color === currentColor) break
+            if (eatableChecker !== null && eatableChecker.color === enemyColor) {
+                let row = rowThatCanBeEaten - 1
+                let col = colThatCanBeEaten + 1
+                while (row >= 0 && col <= 7) {
+                    let cellToMoveTo = board?.[row]?.[col]
+                    if (cellToMoveTo === null) {
+                        possibleMoves.push({row, col, eatableCheckerCoords})
+                    } else break
+                    row--;
+                    col++;
                 }
             }
+            rowThatCanBeEaten--
+            colThatCanBeEaten++
+        }
+
+        rowThatCanBeEaten = fromRow - 1;
+        colThatCanBeEaten = fromCol - 1;
+        breakMainLoop = false;
+        while (rowThatCanBeEaten >= 0 && colThatCanBeEaten >= 0 && !breakMainLoop) {
+            const eatableChecker: Checker | null = board?.[rowThatCanBeEaten]?.[colThatCanBeEaten]
+            const eatableCheckerCoords: Object = {
+                row: rowThatCanBeEaten,
+                col: colThatCanBeEaten
+            }
+            if (eatableChecker?.color === currentColor) break
+            if (eatableChecker !== null && eatableChecker.color === enemyColor) {
+                let row = rowThatCanBeEaten - 1;
+                let col = colThatCanBeEaten - 1;
+                while (row >= 0 && col >= 0) {
+                    let cellToMoveTo = board?.[row]?.[col]
+                    if (cellToMoveTo === null) {
+                        possibleMoves.push({row, col, eatableCheckerCoords})
+                    } else {
+                        breakMainLoop = true
+                        break
+                    }
+                    row--;
+                    col--
+                }
+            }
+            rowThatCanBeEaten--
+            colThatCanBeEaten--
         }
 
         return possibleMoves

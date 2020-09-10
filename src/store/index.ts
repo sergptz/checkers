@@ -13,7 +13,8 @@ export default new Vuex.Store({
         },
         allowedCellsToMove: [],
         allowedCellsToEat: [],
-        whoseMove: 'white'
+        whoseMove: 'white',
+        justAte: false
     },
     getters: {
         allowedCellsToMoveAndEat({allowedCellsToMove, allowedCellsToEat}) {
@@ -44,6 +45,9 @@ export default new Vuex.Store({
         },
         SET_WHOSE_MOVE: (state, {color}) => {
             state.whoseMove = color
+        },
+        SET_JUST_ATE: (state, {justAte}) => {
+            state.justAte = justAte
         },
         SET_ALLOWED_CELLS_TO_MOVE: (state, cells) => {
             state.allowedCellsToMove = cells
@@ -80,6 +84,9 @@ export default new Vuex.Store({
         },
         setAllowedCellsToEat({commit}, {cells}) {
             commit('SET_ALLOWED_CELLS_TO_EAT', cells)
+        },
+        setJustAte({commit}, {justAte}) {
+            commit('SET_JUST_ATE', justAte)
         },
         clearAllowedCellsToMoveAndEat({commit}) {
             commit('SET_ALLOWED_CELLS_TO_MOVE', [])

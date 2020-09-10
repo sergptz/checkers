@@ -41,22 +41,31 @@ export default {
         },
         getCellClasses(row, col) {
             return `cell ${row == this.activeCell.row && col == this.activeCell.col ? 'active' : ''}
-                ${this.allowedCellsGroupedIntoObject[row] && this.allowedCellsGroupedIntoObject[row][col] === true ? 'allowed' : ''}`
+                ${this.allowedCellsToMoveGroupedIntoObject?.[row]?.[col] === true ? 'allowed-to-move ' : ''}
+                ${this.allowedCellsToEatGroupedIntoObject?.[row]?.[col] === true ? 'allowed-to-eat' : ''}`
         }
     },
     computed: {
         boardState() {
             return this.$store.state.board
         },
-        allowedCellsGroupedIntoObject() {
+        allowedCellsToMoveGroupedIntoObject() {
             let result = {}
-            this.allowedCells.map(({row, col}) => {
+            this.allowedCellsToMove.map(({row, col}) => {
                 if (!result[row]) result[row] = {}
                 result[row][col] = true
             })
             return result
         },
-        ...mapState(['activeCell']),
+        allowedCellsToEatGroupedIntoObject() {
+            let result = {}
+            this.allowedCellsToEat.map(({row, col}) => {
+                if (!result[row]) result[row] = {}
+                result[row][col] = true
+            })
+            return result
+        },
+        ...mapState(['activeCell', 'allowedCellsToMove', 'allowedCellsToEat']),
         ...mapGetters({allowedCells: 'allowedCellsToMoveAndEat'})
     },
 }
@@ -88,12 +97,20 @@ tr:nth-child(odd) td:nth-child(even) {
     box-shadow: 0 0 5px 3px rgb(82, 94, 255);
 }
 
-.cell.allowed {
+.cell.allowed-to-move {
     z-index: 2;
     position:relative;
     -webkit-box-shadow: 0 0 5px 5px rgb(38, 85, 53);
     -moz-box-shadow: 0 0 5px 5px rgb(38, 85, 53);
     box-shadow: 0 0 7px 7px rgb(212, 229, 223);
+}
+
+.cell.allowed-to-eat {
+    z-index: 2;
+    position:relative;
+    -webkit-box-shadow: 0 0 5px 5px rgb(241, 5, 70);
+    -moz-box-shadow: 0 0 5px 5px rgb(241, 5, 70);
+    box-shadow: 0 0 7px 7px rgb(241, 5, 70);
 }
 
 .cell.active > .checker {

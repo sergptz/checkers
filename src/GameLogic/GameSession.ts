@@ -81,6 +81,14 @@ export default class GameSession {
         this.store.dispatch('setAllowedCellsToEat', {cells})
     }
 
+    public getJustAte(): boolean {
+        return this.store.state.justAte
+    }
+
+    public setJustAte(justAte: boolean) {
+        this.store.dispatch('setJustAte', {justAte})
+    }
+
     public getAllowedCells(): Array<Object> {
         return this.store.state.allowedCells
     }
