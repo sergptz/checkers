@@ -5,6 +5,9 @@
 <script>
 export default {
     props: {
+        id: {
+            type: Number
+        },
         color: {
             type: String,
             validator: function(value) {
@@ -45,13 +48,13 @@ export default {
 }
 
 .checker.king.white {
-    background-color: #ffc66e;
-    border: dashed black 3px;
+    border: inset black 3px;
+    background: linear-gradient(36deg, rgba(147,194,255,1) 0%, rgba(255,255,255,0.9836309523809523) 100%);
 }
 
 .checker.king.black {
-    background-color: #5d3900;
-    border: dashed white 3px;
+    border: outset white 3px;
+    background: linear-gradient(36deg, rgba(251,85,67,1) 0%, rgba(0,0,0,0.9836309523809523) 100%);
 }
 
 .is-going-to-be-eaten {

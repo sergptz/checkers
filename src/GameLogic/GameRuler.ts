@@ -17,7 +17,32 @@ export default class GameRuler {
         this.gameSession.toggleMove();
     }
 
-    public onCheckerClick(row: number, col: number) {
+    public onCheckerClick(row: number, col: number, id: number | false = false) {
+        const justAte = this.gameSession.getJustAte()
+        if (justAte) {
+            console.error(`Current player must eat all the available checkers by current active checker!`)
+            return
+        }
+
+        this.gameSession.clearMessageForUser()
+
+        const whoseMove = this.gameSession.getWhoseMove()
+        const coordsOfCheckersWhoCanEat = this.getCoordsOfCheckersWhoCanEat(whoseMove)
+        let clickedCheckerCanEat = false
+        if (coordsOfCheckersWhoCanEat.length !== 0) {
+            for (let coords of coordsOfCheckersWhoCanEat) {
+                if (row === coords.row && col === coords.col) {
+                    clickedCheckerCanEat = true
+                    break
+                }
+            }
+            if (!clickedCheckerCanEat) {
+                this.gameSession.setMessageForUser('You should eat a checker')
+                console.warn('This checker cannot eat, but others can, so dont do anything')
+                return
+            }
+        }
+
         this.gameSession.clearActiveCell()
         this.gameSession.clearAllowedCellsToMoveAndEat()
         const checker: Checker | null = this.gameSession.getCheckerByCoords(row, col)
@@ -33,13 +58,35 @@ export default class GameRuler {
             console.warn(`Checker on ${row}:${col} is not movable`)
             return
         }
+        if (checker.isGoingToBeEatenAtTheEndOfTheMove) {
+            console.warn(`Checker on ${row}:${col} is about to be eaten at the end of the move, don't bother it`)
+            return
+        }
+
         // this.gameSession.clearAllowedCellsToMoveAndEat()
         this.gameSession.setActiveCell(row, col)
         this.updateAllPossibleMoves(checker, row, col)
     }
 
+    private getCoordsOfCheckersWhoCanEat(color: String) {
+        const board = this.gameSession.getCurrentBoardState()
+        let checkerCoords: Array<Object> = []
+        for (let row in board) {
+            for (let col in board[row]) {
+                const checker: Checker | null = board[+row][+col]
+                if (checker?.color === color && this.canCheckerEatAtAll(checker, +row, +col)) {
+                    checkerCoords.push({
+                        row: +row, col: +col
+                    })
+                }
+            }
+        }
+        return checkerCoords
+    }
+
     public onCellClick(row: number, col: number) {
         console.info(`${row}:${col} is clicked!`)
+        this.gameSession.clearMessageForUser()
         const checker: Checker | null = this.gameSession.getCheckerByCoords(row, col)
         const justAte = this.gameSession.getJustAte()
 
@@ -65,59 +112,61 @@ export default class GameRuler {
         let fromRow = activeCell.row
         let fromCol = activeCell.col
 
-        /**
-         * TODO При цикличном кушании НЕ ДОЛЖНО юыть возможности переключаться на другие шашки
-         * TODO При цикличном кушании не отрисовываются (или не перерасчитываются) разрешенные клетки
-         * */
-
-        if (this.canCheckerMoveToCellFromCoords(activeChecker, fromRow, fromCol, row, col) && !justAte) {
+        if (this.canCheckerMoveToCellFromCoords(activeChecker, fromRow, fromCol, row, col)
+            && !this.canCheckerEatAtAll(activeChecker, fromRow, fromCol) && !justAte) {
             this.gameSession.moveChecker(fromRow, fromCol, row, col)
-            this.gameSession.setJustAte(false)
+            this.gameSession.clearActiveCell()
+            this.gameSession.clearAllowedCellsToMoveAndEat()
             this.toggleMove()
         } else if (this.canCheckerEatToCellFromCoords(activeChecker, fromRow, fromCol, row, col)) {
             // TODO тестировать цикличное кушание
-            const eatableCheckerCoords = this.getEatableCheckerCoords(activeChecker, fromRow, fromCol, row, col)
-            this.gameSession.eatChecker(fromRow, fromCol, row, col, eatableCheckerCoords)
+            let {row: eatableRow, col: eatableCol} = this.getEatableCheckerCoords(activeChecker, fromRow, fromCol, row, col)
+            // this.eatChecker(fromRow, fromCol, row, col, eatableCheckerCoords)
+            this.gameSession.moveChecker(fromRow, fromCol, row, col)
+            this.gameSession.makeCheckerAlmostEaten(eatableRow, eatableCol)
             /** Если скушав, шашка всё ещё может есть, значит не передаём ход другому игроку и думаем дальше*/
             if (this.canCheckerEatAtAll(activeChecker, row, col)) {
                 this.gameSession.setJustAte(true)
                 this.gameSession.setActiveCell(row, col)
+                this.updateAllPossibleMoves(activeChecker, row, col)
                 return
             } else {
                 this.gameSession.setJustAte(false)
+                this.gameSession.clearAllowedCellsToMoveAndEat()
+                this.gameSession.clearActiveCell()
+                this.gameSession.eatCheckersThatAreAlmostEaten()
                 this.toggleMove()
             }
         } else {
             console.error(`Checker on ${fromRow}:${fromCol} cannot move to ${row}:${col}`)
         }
-        this.gameSession.setJustAte(false)
-        this.gameSession.clearActiveCell()
-        this.gameSession.clearAllowedCellsToMoveAndEat()
     }
 
-    public updateAllPossibleMoves(checker: Checker, row: number, col: number) {
-        this.gameSession.setAllowedCellsToMove(this.getAllPossibleMoves(checker, row, col))
-        this.gameSession.setAllowedCellsToEat(this.getAllPossibleEats(checker, row, col))
+    private updateAllPossibleMoves(checker: Checker, row: number, col: number) {
+        const possibleEats = this.getAllPossibleEats(checker, row, col)
+        this.gameSession.setAllowedCellsToEat(possibleEats)
+        if (possibleEats.length === 0)
+            this.gameSession.setAllowedCellsToMove(this.getAllPossibleMoves(checker, row, col))
     }
 
-    public isPlayerRightful(checker: Checker): boolean {
+    private isPlayerRightful(checker: Checker): boolean {
         return this.gameSession.getWhoseMove() === checker.color
     }
 
-    public atLeastOneMoveIsPossibleForChecker(checker: Checker, fromRow: number, fromCol: number): boolean {
+    private atLeastOneMoveIsPossibleForChecker(checker: Checker, fromRow: number, fromCol: number): boolean {
         return this.canCheckerMoveAtAll(checker, fromRow, fromCol) ||
             this.canCheckerEatAtAll(checker, fromRow, fromCol)
     }
 
-    public canCheckerMoveAtAll(checker: Checker, fromRow: number, fromCol: number): boolean {
+    private canCheckerMoveAtAll(checker: Checker, fromRow: number, fromCol: number): boolean {
         return this.getAllPossibleMoves(checker, fromRow, fromCol).length > 0
     }
 
-    public canCheckerEatAtAll(checker: Checker, fromRow: number, fromCol: number): boolean {
+    private canCheckerEatAtAll(checker: Checker, fromRow: number, fromCol: number): boolean {
         return this.getAllPossibleEats(checker, fromRow, fromCol).length > 0
     }
 
-    public canCheckerMoveToCellFromCoords(checker: Checker, fromRow: number, fromCol: number, toRow: number, toCol: number) {
+    private canCheckerMoveToCellFromCoords(checker: Checker, fromRow: number, fromCol: number, toRow: number, toCol: number) {
         const possibleMoves = this.getAllPossibleMoves(checker, fromRow, fromCol)
         let answer = false;
         possibleMoves.forEach(({row, col}) => {
@@ -126,7 +175,7 @@ export default class GameRuler {
         return answer
     }
 
-    public canCheckerEatToCellFromCoords(checker: Checker, fromRow: number, fromCol: number, toRow: number, toCol: number) {
+    private canCheckerEatToCellFromCoords(checker: Checker, fromRow: number, fromCol: number, toRow: number, toCol: number) {
         const possibleEats = this.getAllPossibleEats(checker, fromRow, fromCol);
         let answer = false;
         possibleEats.forEach(({row, col}) => {
@@ -135,7 +184,7 @@ export default class GameRuler {
         return answer
     }
 
-    public getEatableCheckerCoords(checker: Checker, fromRow: number, fromCol: number, toRow: number, toCol: number): Object {
+    private getEatableCheckerCoords(checker: Checker, fromRow: number, fromCol: number, toRow: number, toCol: number): Object {
         const possibleEats = this.getAllPossibleEats(checker, fromRow, fromCol);
         for (let {row, col, eatableCheckerCoords} of possibleEats) {
             if (row == toRow && col == toCol) {
@@ -143,6 +192,11 @@ export default class GameRuler {
             }
         }
         throw new Error(`No eatable checker found that can be eaten from ${fromRow}:${fromCol} moving to ${toRow}:${toCol}`)
+    }
+
+    private eatChecker(fromRow: number, fromCol: number, toRow: number, toCol: number, eatableCheckerCoords: Object) {
+        this.gameSession.moveChecker(fromRow, fromCol, toRow, toCol)
+        this.gameSession.removeCheckerByCoord(eatableCheckerCoords.row, eatableCheckerCoords.col)
     }
 
     public getAllPossibleMoves(checker: Checker, fromRow: number, fromCol: number): Array<Object> {
@@ -220,7 +274,7 @@ export default class GameRuler {
     public getPossibleCellsToEatForKing(checker: Checker, fromRow: number, fromCol: number): Array<Object> {
         const board = this.getState();
         let possibleMoves = []
-        const enemyColor = this.getEnemyColor(checker)
+        const enemyColor = this.gameSession.getEnemyColor(checker.color)
         const currentColor = this.gameSession.getWhoseMove()
 
         let rowThatCanBeEaten = fromRow + 1;
@@ -370,11 +424,8 @@ export default class GameRuler {
 
     public getPossibleCellsToEatForUsualChecker(checker: Checker, fromRow: number, fromCol: number): Array<any> {
         /**
-         * TODO Заметка на будущее - знать правила того, с чем работаешь
          * TODO Запилить выполнение следующих правил:
-         *  1. Взятие обязательно
          *  2. Побитые шашки и дамки снимаются только после завершения хода
-         *  3. Взятие (кушание) простой шашкой производится как вперёд, так и назад.
          *  4. За один ход шашку противника можно побить только один раз
          * */
 
@@ -382,7 +433,7 @@ export default class GameRuler {
         let possibleMoves: Array<any> = []
         let possibleRowsDeltas = [2, -2]
         let possibleColsDeltas = [2, -2]
-        const enemyColor = this.getEnemyColor(checker)
+        const enemyColor = this.gameSession.getEnemyColor(checker.color)
         possibleRowsDeltas.forEach(rowDelta => {
             const finalRow = fromRow + rowDelta
             const eatableCheckerRow = finalRow - rowDelta / 2
@@ -404,9 +455,5 @@ export default class GameRuler {
             })
         })
         return possibleMoves
-    }
-
-    public getEnemyColor(checker: Checker): String {
-        return checker.color === 'white' ? 'black' : 'white'
     }
 }

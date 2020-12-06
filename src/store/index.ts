@@ -14,11 +14,18 @@ export default new Vuex.Store({
         allowedCellsToMove: [],
         allowedCellsToEat: [],
         whoseMove: 'white',
-        justAte: false
+        justAte: false,
+        message: ''
     },
     getters: {
         allowedCellsToMoveAndEat({allowedCellsToMove, allowedCellsToEat}) {
             return allowedCellsToMove.concat(allowedCellsToEat)
+        },
+        getCheckersOfCurrentPlayer: ({board, whoseMove}) => {
+            return board.flat().filter(checker => checker && checker.color === whoseMove)
+        },
+        getCheckersOfEnemyPlayer: ({board, whoseMove}) => {
+            return board.flat().filter(checker => checker && checker.color !== whoseMove)
         }
     },
     mutations: {
@@ -46,7 +53,7 @@ export default new Vuex.Store({
         SET_WHOSE_MOVE: (state, {color}) => {
             state.whoseMove = color
         },
-        SET_JUST_ATE: (state, {justAte}) => {
+        SET_JUST_ATE: (state, justAte) => {
             state.justAte = justAte
         },
         SET_ALLOWED_CELLS_TO_MOVE: (state, cells) => {
@@ -54,6 +61,9 @@ export default new Vuex.Store({
         },
         SET_ALLOWED_CELLS_TO_EAT: (state, cells) => {
             state.allowedCellsToEat = cells
+        },
+        SET_MESSAGE: (state, message) => {
+            state.message = message
         }
     },
     actions: {
@@ -91,6 +101,9 @@ export default new Vuex.Store({
         clearAllowedCellsToMoveAndEat({commit}) {
             commit('SET_ALLOWED_CELLS_TO_MOVE', [])
             commit('SET_ALLOWED_CELLS_TO_EAT', [])
+        },
+        setMessage({commit}, {message}) {
+            commit('SET_MESSAGE', message);
         }
     }
 })

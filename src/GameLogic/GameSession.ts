@@ -21,11 +21,12 @@ export default class GameSession {
 
     public initializeSession(): void {
         let initBoardState: Array<Array<any>> = []
+        let id = 1;
         for (let y in this.initialCoordinates) {
             initBoardState[y] = []
             for (let x in this.initialCoordinates[y]) {
                 let colorId = this.initialCoordinates[y][x]
-                if (colorId) initBoardState[y][x] = new Checker(colorId === 1 ? 'white' : 'black')
+                if (colorId) initBoardState[y][x] = new Checker(colorId === 1 ? 'white' : 'black', id++)
                 else initBoardState[y][x] = null
             }
         }
@@ -97,12 +98,44 @@ export default class GameSession {
         this.store.dispatch('clearAllowedCellsToMoveAndEat')
     }
 
-    public eatChecker(fromRow: number, fromCol: number, toRow: number, toCol: number, eatableCheckerCoords: Object) {
-        this.moveChecker(fromRow, fromCol, toRow, toCol)
-        this.removeCheckerByCoord(eatableCheckerCoords.row, eatableCheckerCoords.col)
+    public makeCheckerAlmostEaten(row: number, col: number) {
+        const checker: Checker | null = this.store.dispatch('getCheckerByCoords', {row, col})
+        if (checker !== null) {
+            checker.isGoingToBeEatenAtTheEndOfTheMove = true;
+            this.store.commit('SET_CHECKER', {row, col, checker})
+        }
     }
+
+    public eatCheckersThatAreAlmostEaten() {
+        let enemyCheckers = this.store.getters['getCheckersOfEnemyPlayer']
+        let result = []
+        console.log(enemyCheckers)
+        for (let checker of enemyCheckers) {
+            if (checker.isGoingToBeEatenAtTheEndOfTheMove) {
+                result.push(checker)
+            }
+        }
+        return result
+    }
+
+    // public eatChecker(fromRow: number, fromCol: number, toRow: number, toCol: number, eatableCheckerCoords: Object) {
+    //     this.moveChecker(fromRow, fromCol, toRow, toCol)
+    //     this.removeCheckerByCoord(eatableCheckerCoords.row, eatableCheckerCoords.col)
+    // }
 
     public moveChecker(fromRow: number, fromCol: number, toRow: number, toCol: number) {
         this.store.dispatch('moveChecker', {fromRow, fromCol, toRow, toCol})
+    }
+
+    public setMessageForUser(message: string) {
+        this.store.dispatch('setMessage', {message})
+    }
+
+    public clearMessageForUser() {
+        this.setMessageForUser('')
+    }
+
+    public getEnemyColor(color: String): String {
+        return color === 'white' ? 'black' : 'white'
     }
 }

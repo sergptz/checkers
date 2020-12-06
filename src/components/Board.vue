@@ -14,7 +14,7 @@
             <td @click="onCellClick(row, col)"
                 v-for="(cellValue, col) in rowState" :data-id="row + '_' + col" :key="'cell:' + row + '_' + col"
                 align="center" :class="getCellClasses(row, col)">
-                <Checker v-if="cellValue" :color="cellValue.color" :is-king="cellValue.isKing" @click.native.stop="onCheckerClick(row, col)"/>
+                <Checker v-if="cellValue" :id="cellValue.id" :color="cellValue.color" :is-king="cellValue.isKing" @click.native.stop="onCheckerClick(row, col)"/>
             </td>
         </tr>
     </table>
@@ -74,20 +74,24 @@ export default {
 <style>
 .checkers-table {
     table-layout: fixed;
+    margin: auto;
+    border: 4px double #ffc66e;
+    min-width: 68vh;
+    min-height: 68vh;
 }
 
-tr td {
+tr td.cell {
     background-color: rgb(128, 44, 44);
 }
 
-tr:nth-child(even) td:nth-child(odd),
-tr:nth-child(odd) td:nth-child(even) {
+tr:nth-child(even) td:nth-child(odd).cell,
+tr:nth-child(odd) td:nth-child(even).cell {
     background-color: rgb(218, 206, 98);
 }
 
 .cell {
-    width: 8vw;
-    height: 8vw;
+    width: 8vh;
+    height: 8vh;
 }
 .cell.active {
     z-index: 2;
